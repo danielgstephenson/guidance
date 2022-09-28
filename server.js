@@ -27,8 +27,8 @@ app.get('/socketIo/:fileName', function (req, res) {
 
 function makeServer () {
   if (config.secure) {
-    const key = fs.readFileSync('./srs-key.pem')
-    const cert = fs.readFileSync('./srs-cert.pem')
+    const key = fs.readFileSync('./sis-key.pem')
+    const cert = fs.readFileSync('./sis-cert.pem')
     const credentials = { key, cert }
     return new https.Server(credentials, app)
   } else {
