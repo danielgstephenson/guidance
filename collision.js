@@ -27,6 +27,7 @@ export function collideActorNode (actor, node) {
   const dist = getDist(actor.position, node.position)
   const overlap = actor.radius + node.radius - dist
   if (overlap < 0) return false
+  if (actor.role === 'player') node.team = actor.team
   return true
 }
 
