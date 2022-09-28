@@ -126,7 +126,7 @@ function pursue () {
       const pursueForce = sub(targetVelocity, predator.velocity)
       const centerForce = mult(norm(predator.position), -1)
       const boundX = Math.abs(predator.position.x) < 0.5 * mapSize
-      const boundY = Math.abs(predator.position.x) < 0.5 * mapSize
+      const boundY = Math.abs(predator.position.y) < 0.5 * mapSize
       const targetForce = boundX & boundY ? pursueForce : centerForce
       const best = { align: 0 }
       compass.forEach(compassDir => {
