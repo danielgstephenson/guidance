@@ -77,7 +77,7 @@ const predators = new Map()
 const sockets = new Map()
 const units = new Map()
 
-setupWalls()
+// setupWalls()
 setupNodes()
 
 function tick () {
