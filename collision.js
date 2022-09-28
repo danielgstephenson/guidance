@@ -23,14 +23,6 @@ export function collideActorWall (actor, wall) {
   return true
 }
 
-export function collideActorNode (actor, node) {
-  const dist = getDist(actor.position, node.position)
-  const overlap = actor.radius + node.radius - dist
-  if (overlap < 0) return false
-  if (actor.role === 'player') node.team = actor.team
-  return true
-}
-
 export function collideActorActor (a, b) {
   if (a.id === b.id && a.role === b.role) return false
   const dist = getDist(a.position, b.position)
@@ -50,9 +42,22 @@ export function collideActorActor (a, b) {
   return true
 }
 
+export function collideActorNode (actor, node) {
+  const dist = getDist(actor.position, node.position)
+  const overlap = actor.radius + node.radius - dist
+  if (overlap < 0) return false
+  if (actor.role === 'player' && actor.buildTimer >= 1) node.team = actor.team
+  return true
+}
+
 function onCollidePlayerPredator (player, predator, state) {
   predator.freezeTimer = 1
   player.buildTimer = 0
+  /*
+  state.nodes.forEach(node => {
+    if (node.team === player.team) node.team = 0
+  })
+  */
 }
 
 export function getEdges (state) {

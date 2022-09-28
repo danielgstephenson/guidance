@@ -1,5 +1,7 @@
 import { io } from './socketIo/socket.io.esm.min.js'
 const socket = io()
+const blueDiv = document.getElementById('blueDiv')
+const greenDiv = document.getElementById('greenDiv')
 const canvas = document.getElementById('canvas')
 const context = canvas.getContext('2d')
 context.imageSmoothingEnabled = false
@@ -117,8 +119,14 @@ const colors = {
 function drawState () {
   context.clearRect(0, 0, 100, 100)
   if (state.nodes) {
-    context.globalAlpha = 0.01
+    context.globalAlpha = 0.05
+    const counts = {
+      blue: 0,
+      green: 0
+    }
     state.nodes.forEach(node => {
+      if (node.team === 1) counts.blue += 1
+      if (node.team === 2) counts.green += 1
       context.beginPath()
       context.fillStyle = colors[node.team]
       const x = node.position.x - camera.position.x
@@ -126,6 +134,8 @@ function drawState () {
       context.arc(x, y, node.radius, 0, 2 * Math.PI)
       context.fill()
     })
+    blueDiv.innerHTML = counts.blue
+    greenDiv.innerHTML = counts.green
   }
   if (state.walls) {
     context.globalAlpha = 1

@@ -50,7 +50,7 @@ const dt = 0.01
 const drag = 1
 const actorMovePower = 70
 const mapSize = 150
-const actorSize = 1
+const actorSize = 1.5
 const nodeSize = 9
 const nodeSpread = 6
 
@@ -85,30 +85,60 @@ function tick () {
   movePlayers()
   movePredators()
   collide(state)
+  grow()
   updateClients()
   pursue()
 }
 
+const predator = {
+  id: 0,
+  team: 3,
+  position: { x: 0, y: 50 },
+  velocity: { x: 0, y: 0 },
+  force: { x: 0, y: 0 },
+  prey: null,
+  radius: actorSize,
+  freezeTimer: 0,
+  role: 'predator'
+}
+predators.set(0, predator)
+
 function pursue () {
   state.predators.forEach(predator => {
-    const prey = predator.prey
-    const preyDir = getDirection(predator.position, prey.position)
-    const projection = project(prey.velocity, preyDir)
-    const rejection = sub(prey.velocity, projection)
-    const flee = 1 * (dot(norm(projection), preyDir) > 0)
-    const fleeVelocity = add(rejection, mult(projection, flee))
-    const distance = getDist(predator.position, prey.position)
-    const advance = 5 + 0.3 * distance
-    const targetVelocity = add(fleeVelocity, mult(preyDir, advance))
-    const targetForce = sub(targetVelocity, predator.velocity)
-    const best = { align: 0 }
-    compass.forEach(compassDir => {
-      const align = dot(compassDir, targetForce)
-      if (align > best.align) {
-        best.align = align
-        predator.force = norm(compassDir)
+    const min = { distance: Infinity }
+    players.forEach(player => {
+      const distance = getDist(predator.position, player.position)
+      if (distance < min.distance) {
+        predator.prey = player
+        min.distance = distance
       }
     })
+    const prey = predator.prey
+    if (prey) {
+      const preyDir = getDirection(predator.position, prey.position)
+      const projection = project(prey.velocity, preyDir)
+      const rejection = sub(prey.velocity, projection)
+      const flee = 1 * (dot(norm(projection), preyDir) > 0)
+      const fleeVelocity = add(rejection, mult(projection, flee))
+      const distance = getDist(predator.position, prey.position)
+      const advance = 5 + 0.5 * distance
+      const targetVelocity = add(fleeVelocity, mult(preyDir, advance))
+      const targetForce = sub(targetVelocity, predator.velocity)
+      const best = { align: 0 }
+      compass.forEach(compassDir => {
+        const align = dot(compassDir, targetForce)
+        if (align > best.align) {
+          best.align = align
+          predator.force = norm(compassDir)
+        }
+      })
+    }
+  })
+}
+
+function grow () {
+  players.forEach(player => {
+    player.buildTimer += dt / 5
   })
 }
 
@@ -252,18 +282,6 @@ io.on('connection', socket => {
   }
   players.set(socket.id, player)
   sockets.set(socket.id, socket)
-  const predator = {
-    id: socket.id,
-    team: 3,
-    position: { x: 0, y: 50 },
-    velocity: { x: 0, y: 0 },
-    force: { x: 0, y: 0 },
-    radius: actorSize,
-    prey: player,
-    freezeTimer: 0,
-    role: 'predator'
-  }
-  predators.set(socket.id, predator)
   socket.on('updateServer', message => {
     player.controls = message.controls
   })
