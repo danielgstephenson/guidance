@@ -47,9 +47,9 @@ server.listen(config.port, () => {
 function range (n) { return [...Array(n).keys()] }
 
 const dt = 0.01
-const drag = 1
-const actorMovePower = 70
-const actorSize = 1.5
+const actorMovePower = 60
+const drag = 0.5
+const actorSize = 1
 const nodeSize = 9
 const nodeSpread = 10
 
@@ -86,19 +86,6 @@ const units = new Map()
 setupWalls()
 setupNodes()
 
-const attacker = {
-  id: 0,
-  team: 3,
-  position: { x: 0, y: 1 },
-  velocity: { x: 0, y: 0 },
-  force: { x: 0, y: 0 },
-  prey: null,
-  radius: actorSize,
-  freezeTimer: 0,
-  role: 'attacker'
-}
-attackers.set(0, attacker)
-
 function tick () {
   state.time += dt
   movePlayers()
@@ -126,12 +113,11 @@ function pursue () {
       const rejection = sub(prey.velocity, projection)
       const flee = 1 * (dot(norm(projection), preyDir) > 0)
       const fleeVelocity = add(rejection, mult(projection, flee))
-      const fleeForce = mult(prey.force, flee)
       const distance = getDist(attacker.position, prey.position)
-      const advance = 10 + 0.5 * distance
+      const advance = 4 + 0.5 * distance
       const targetVelocity = add(fleeVelocity, mult(preyDir, advance))
-      const chaseForce = norm(sub(targetVelocity, attacker.velocity))
-      const targetForce = add(chaseForce, fleeForce)
+      const pursueForce = norm(sub(targetVelocity, attacker.velocity))
+      const targetForce = add(pursueForce, mult(prey.force, flee))
       const best = { align: 0 }
       compass.forEach(compassDir => {
         const align = dot(compassDir, targetForce)
@@ -149,7 +135,7 @@ function grow () {
     player.buildTimer += dt / 5
   })
   attackers.forEach(attacker => {
-    attacker.freezeTimer += dt
+    attacker.freezeTimer += dt / 2
   })
 }
 
@@ -173,11 +159,12 @@ function moveAttackers () {
 }
 
 function moveActor (actor) {
-  actor.velocity.x += actor.force.x * dt * actorMovePower
-  actor.velocity.y += actor.force.y * dt * actorMovePower
+  actor.velocity.x -= actor.velocity.x * drag * dt
+  actor.velocity.y -= actor.velocity.y * drag * dt
+  actor.velocity.x += actor.force.x * actorMovePower * dt
+  actor.velocity.y += actor.force.y * actorMovePower * dt
   actor.position.x += actor.velocity.x * dt
   actor.position.y += actor.velocity.y * dt
-  actor.velocity = mult(actor.velocity, 1 - dt * drag)
 }
 
 function setupWalls () {
@@ -292,6 +279,18 @@ io.on('connection', socket => {
   }
   players.set(socket.id, player)
   sockets.set(socket.id, socket)
+  const attacker = {
+    id: socket.id,
+    team: 3,
+    position: { x: 0, y: 1 },
+    velocity: { x: 0, y: 0 },
+    force: { x: 0, y: 0 },
+    prey: null,
+    radius: actorSize,
+    freezeTimer: 0,
+    role: 'attacker'
+  }
+  attackers.set(socket.id, attacker)
   socket.on('updateServer', message => {
     player.controls = message.controls
   })

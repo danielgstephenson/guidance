@@ -150,6 +150,7 @@ function drawState () {
   if (state.players) {
     context.globalAlpha = 1
     state.players.forEach(player => {
+      console.log('player.speed', Math.sqrt(player.velocity.x ** 2 + player.velocity.y ** 2))
       context.fillStyle = colors[player.team]
       const x = player.position.x - camera.position.x
       const y = player.position.y - camera.position.y
