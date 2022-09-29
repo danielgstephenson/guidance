@@ -9,7 +9,7 @@ export function collideActorWall (actor, wall) {
     const sign = Math.sign(actor.position.x - wall.position.x)
     actor.position.x += sign * overlapX * 1.01
     actor.velocity = {
-      x: 0,
+      x: -0.1 * actor.velocity.x,
       y: actor.velocity.y
     }
   } else {
@@ -17,9 +17,10 @@ export function collideActorWall (actor, wall) {
     actor.position.y += sign * overlapY * 1.01
     actor.velocity = {
       x: actor.velocity.x,
-      y: 0
+      y: -0.1 * actor.velocity.y
     }
   }
+  if (actor.role === 'player') actor.buildTimer = 0
   return true
 }
 
@@ -50,8 +51,8 @@ export function collideActorNode (actor, node) {
   return true
 }
 
-function onCollidePlayerPredator (player, predator, state) {
-  predator.freezeTimer = 1
+function onCollidePlayerAttacker (player, attacker, state) {
+  attacker.freezeTimer = 0
   player.buildTimer = 0
   /*
   state.nodes.forEach(node => {
@@ -99,16 +100,16 @@ export function getEdges (state) {
       x: player.position.x + player.radius
     })
   })
-  state.predators.forEach(predator => {
+  state.attackers.forEach(attacker => {
     edges.push({
-      object: predator,
+      object: attacker,
       side: 'left',
-      x: predator.position.x - predator.radius - pad
+      x: attacker.position.x - attacker.radius - pad
     })
     edges.push({
-      object: predator,
+      object: attacker,
       side: 'right',
-      x: predator.position.x + predator.radius
+      x: attacker.position.x + attacker.radius
     })
   })
   edges.sort((a, b) => a.x - b.x)
@@ -119,7 +120,7 @@ export function collide (state) {
   const edges = getEdges(state)
   const active = {
     players: new Map(),
-    predators: new Map(),
+    attackers: new Map(),
     walls: new Map(),
     nodes: new Map()
   }
@@ -130,18 +131,18 @@ export function collide (state) {
   }
   edges.forEach(edge => {
     if (edge.side === 'left') {
-      if (['player', 'predator'].includes(edge.object.role)) {
+      if (['player', 'attacker'].includes(edge.object.role)) {
         const actor = edge.object
         active.players.forEach(player => pairs.actorActor.push([actor, player]))
-        active.predators.forEach(predator => pairs.actorActor.push([actor, predator]))
+        active.attackers.forEach(attacker => pairs.actorActor.push([actor, attacker]))
         active.walls.forEach(wall => pairs.actorWall.push([actor, wall]))
         active.nodes.forEach(node => pairs.playerNode.push([actor, node]))
         if (edge.object.role === 'player') active.players.set(actor.id, actor)
-        if (edge.object.role === 'predator') active.predators.set(actor.id, actor)
+        if (edge.object.role === 'attacker') active.attackers.set(actor.id, actor)
       } else if (edge.object.role === 'wall') {
         const wall = edge.object
         active.players.forEach(player => pairs.actorWall.push([player, wall]))
-        active.predators.forEach(predator => pairs.actorWall.push([predator, wall]))
+        active.attackers.forEach(attacker => pairs.actorWall.push([attacker, wall]))
         active.walls.set(wall.id, wall)
       } else if (edge.object.role === 'node') {
         const node = edge.object
@@ -151,7 +152,7 @@ export function collide (state) {
     }
     if (edge.side === 'right') {
       if (edge.object.role === 'player') active.players.delete(edge.object.id)
-      if (edge.object.role === 'predator') active.predators.delete(edge.object.id)
+      if (edge.object.role === 'attacker') active.attackers.delete(edge.object.id)
       if (edge.object.role === 'wall') active.walls.delete(edge.object.id)
       if (edge.object.role === 'node') active.nodes.delete(edge.object.id)
     }
@@ -177,11 +178,11 @@ export function collide (state) {
     const actorA = pair[0]
     const actorB = pair[1]
     if (collideActorActor(actorA, actorB)) {
-      if (actorA.role === 'player' && actorB.role === 'predator') {
-        onCollidePlayerPredator(actorA, actorB, state)
+      if (actorA.role === 'player' && actorB.role === 'attacker') {
+        onCollidePlayerAttacker(actorA, actorB, state)
       }
-      if (actorB.role === 'player' && actorA.role === 'predator') {
-        onCollidePlayerPredator(actorB, actorA, state)
+      if (actorB.role === 'player' && actorA.role === 'attacker') {
+        onCollidePlayerAttacker(actorB, actorA, state)
       }
     }
   })

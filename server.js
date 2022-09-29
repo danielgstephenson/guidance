@@ -49,10 +49,9 @@ function range (n) { return [...Array(n).keys()] }
 const dt = 0.01
 const drag = 1
 const actorMovePower = 70
-const mapSize = 150
 const actorSize = 1.5
 const nodeSize = 9
-const nodeSpread = 6
+const nodeSpread = 10
 
 const compass = [
   { x: 1, y: 0 },
@@ -70,69 +69,75 @@ const state = {
   players: [],
   nodes: [],
   walls: [],
-  predators: []
+  attackers: [],
+  wallPadding: 5,
+  wallThickness: 50000,
+  mapSize: 150,
+  xMax: Infinity,
+  yMax: Infinity,
+  xMin: -Infinity,
+  yMin: -Infinity
 }
 const players = new Map()
-const predators = new Map()
+const attackers = new Map()
 const sockets = new Map()
 const units = new Map()
 
-// setupWalls()
+setupWalls()
 setupNodes()
+
+const attacker = {
+  id: 0,
+  team: 3,
+  position: { x: 0, y: 1 },
+  velocity: { x: 0, y: 0 },
+  force: { x: 0, y: 0 },
+  prey: null,
+  radius: actorSize,
+  freezeTimer: 0,
+  role: 'attacker'
+}
+attackers.set(0, attacker)
 
 function tick () {
   state.time += dt
   movePlayers()
-  movePredators()
+  moveAttackers()
   collide(state)
   grow()
   updateClients()
   pursue()
 }
 
-const predator = {
-  id: 0,
-  team: 3,
-  position: { x: 0, y: 50 },
-  velocity: { x: 0, y: 0 },
-  force: { x: 0, y: 0 },
-  prey: null,
-  radius: actorSize,
-  freezeTimer: 0,
-  role: 'predator'
-}
-predators.set(0, predator)
-
 function pursue () {
-  state.predators.forEach(predator => {
+  state.attackers.forEach(attacker => {
     const min = { distance: Infinity }
     players.forEach(player => {
-      const distance = getDist(predator.position, player.position)
+      const distance = getDist(attacker.position, player.position)
       if (distance < min.distance) {
-        predator.prey = player
+        attacker.prey = player
         min.distance = distance
       }
     })
-    const prey = predator.prey
+    const prey = attacker.prey
     if (prey) {
-      const preyDir = getDirection(predator.position, prey.position)
+      const preyDir = getDirection(attacker.position, prey.position)
       const projection = project(prey.velocity, preyDir)
       const rejection = sub(prey.velocity, projection)
       const flee = 1 * (dot(norm(projection), preyDir) > 0)
       const fleeVelocity = add(rejection, mult(projection, flee))
-      const distance = getDist(predator.position, prey.position)
-      const advance = 5 + 0.5 * distance
+      const fleeForce = mult(prey.force, flee)
+      const distance = getDist(attacker.position, prey.position)
+      const advance = 10 + 0.5 * distance
       const targetVelocity = add(fleeVelocity, mult(preyDir, advance))
-      const pursueForce = sub(targetVelocity, predator.velocity)
-      const boundX = Math.abs(predator.position.x) < 0.5 * mapSize
-      const boundY = Math.abs(predator.position.y) < 0.5 * mapSize
-      const targetForce = pursueForce
+      const chaseForce = norm(sub(targetVelocity, attacker.velocity))
+      const targetForce = add(chaseForce, fleeForce)
       const best = { align: 0 }
       compass.forEach(compassDir => {
         const align = dot(compassDir, targetForce)
         if (align > best.align) {
           best.align = align
-          predator.force = norm(compassDir)
+          attacker.force = norm(compassDir)
         }
       })
     }
@@ -142,6 +147,9 @@ function pursue () {
 function grow () {
   players.forEach(player => {
     player.buildTimer += dt / 5
+  })
+  attackers.forEach(attacker => {
+    attacker.freezeTimer += dt
   })
 }
 
@@ -156,13 +164,10 @@ function movePlayers () {
   })
 }
 
-function movePredators () {
-  state.predators.forEach(predator => {
-    if (predator.freezeTimer <= 0) {
-      moveActor(predator)
-    } else if (predator.freezeTimer > 0) {
-      predator.freezeTimer -= dt
-      predator.freezeTimer = Math.max(0, predator.freezeTimer)
+function moveAttackers () {
+  state.attackers.forEach(attacker => {
+    if (attacker.freezeTimer > 1) {
+      moveActor(attacker)
     }
   })
 }
@@ -176,37 +181,39 @@ function moveActor (actor) {
 }
 
 function setupWalls () {
-  const wallThickness = 10
-  const wallPadding = -20
-  const wallLength = mapSize + wallPadding
+  const wallLength = state.mapSize + state.wallPadding + state.wallThickness
+  state.xMax = state.mapSize + state.wallPadding
+  state.yMax = state.mapSize + state.wallPadding
+  state.xMin = -state.mapSize - state.wallPadding
+  state.yMin = -state.mapSize - state.wallPadding
   const topWall = {
     position: { x: 0, y: -0.5 * wallLength },
-    width: wallLength + wallThickness,
-    height: wallThickness,
+    width: wallLength + state.wallThickness,
+    height: state.wallThickness,
     id: state.walls.length,
     role: 'wall'
   }
   state.walls.push(topWall)
   const bottomWall = {
     position: { x: 0, y: 0.5 * wallLength },
-    width: wallLength + wallThickness,
-    height: wallThickness,
+    width: wallLength + state.wallThickness,
+    height: state.wallThickness,
     id: state.walls.length,
     role: 'wall'
   }
   state.walls.push(bottomWall)
   const leftWall = {
     position: { x: -0.5 * wallLength, y: 0 },
-    width: wallThickness,
-    height: wallLength + wallThickness,
+    width: state.wallThickness,
+    height: wallLength + state.wallThickness,
     id: state.walls.length,
     role: 'wall'
   }
   state.walls.push(leftWall)
   const rightWall = {
     position: { x: 0.5 * wallLength, y: 0 },
-    width: wallThickness,
-    height: wallLength + 0.5 * wallThickness,
+    width: state.wallThickness,
+    height: wallLength + 0.5 * state.wallThickness,
     id: state.walls.length,
     role: 'wall'
   }
@@ -216,8 +223,8 @@ function setupWalls () {
 function setupNodes () {
   range(100000).forEach(i => {
     const position = {
-      x: (Math.random() - 0.5) * (mapSize - 4 * nodeSize),
-      y: (Math.random() - 0.5) * (mapSize - 4 * nodeSize)
+      x: (Math.random() - 0.5) * (state.mapSize - 2 * nodeSize),
+      y: (Math.random() - 0.5) * (state.mapSize - 2 * nodeSize)
     }
     const nodeDistances = state.nodes.map(node => getDist(position, node.position))
     const minNodeDist = Math.min(...nodeDistances, Infinity)
@@ -257,7 +264,7 @@ function setupNodes () {
 
 async function updateClients () {
   state.players = Array.from(players.values())
-  state.predators = Array.from(predators.values())
+  state.attackers = Array.from(attackers.values())
   state.units = Array.from(units.values())
   players.forEach(player => {
     const socket = sockets.get(player.id)
@@ -292,6 +299,6 @@ io.on('connection', socket => {
     console.log('disconnect:', socket.id)
     sockets.delete(socket.id)
     players.delete(socket.id)
-    predators.delete(socket.id)
+    attackers.delete(socket.id)
   })
 })

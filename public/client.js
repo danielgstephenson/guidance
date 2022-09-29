@@ -34,7 +34,7 @@ const controls = {
   left: false,
   right: false,
   select: false,
-  zoom: 0
+  zoom: 0.5
 }
 const record = {}
 const keys = new Map()
@@ -112,19 +112,20 @@ function setupCanvas () {
 const colors = {
   0: 'hsl(180, 100%, 80%)',
   1: 'hsl(220, 100%, 50%)',
-  2: 'hsl(140, 100%, 30%)',
-  wall: 'hsl(180, 10%, 10%)'
+  2: 'hsl(140, 100%, 25%)',
+  wall: 'hsl(360, 100%, 5%)'
 }
 
 function drawState () {
   context.clearRect(0, 0, 100, 100)
+  context.globalAlpha = 0.5
   if (state.nodes) {
-    context.globalAlpha = 0.05
     const counts = {
       blue: 0,
       green: 0
     }
     state.nodes.forEach(node => {
+      context.globalAlpha = node.team === 0 ? 0.05 : 0.2
       if (node.team === 1) counts.blue += 1
       if (node.team === 2) counts.green += 1
       context.beginPath()
@@ -162,14 +163,19 @@ function drawState () {
       context.fill()
     })
   }
-  if (state.predators) {
+  if (state.attackers) {
     context.globalAlpha = 1
-    state.predators.forEach(predator => {
+    state.attackers.forEach(attacker => {
       context.fillStyle = 'red'
-      const x = predator.position.x - camera.position.x
-      const y = predator.position.y - camera.position.y
+      const x = attacker.position.x - camera.position.x
+      const y = attacker.position.y - camera.position.y
       context.beginPath()
-      context.arc(x, y, predator.radius, 0, 2 * Math.PI)
+      context.arc(x, y, attacker.radius, 0, 2 * Math.PI)
+      context.fill()
+      context.fillStyle = 'black'
+      const holeRadius = 0.8 * attacker.radius * Math.sqrt(1 - attacker.freezeTimer)
+      context.beginPath()
+      context.arc(x, y, holeRadius, 0, 2 * Math.PI)
       context.fill()
     })
   }
