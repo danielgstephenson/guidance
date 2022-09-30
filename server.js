@@ -50,8 +50,8 @@ const dt = 0.01
 const actorMovePower = 60
 const drag = 0.5
 const actorSize = 1
-const nodeSize = 9
-const nodeSpread = 10
+const nodeSize = 4
+const nodeSpread = 5
 
 const compass = [
   { x: 1, y: 0 },
@@ -72,7 +72,7 @@ const state = {
   attackers: [],
   wallPadding: 5,
   wallThickness: 50000,
-  mapSize: 150,
+  mapSize: 70,
   xMax: Infinity,
   yMax: Infinity,
   xMin: -Infinity,
@@ -114,7 +114,7 @@ function pursue () {
       const flee = 1 * (dot(norm(projection), preyDir) > 0)
       const fleeVelocity = add(rejection, mult(projection, flee))
       const distance = getDist(attacker.position, prey.position)
-      const advance = 4 + 0.5 * distance
+      const advance = 10 + 0.5 * distance
       const targetVelocity = add(fleeVelocity, mult(preyDir, advance))
       const pursueForce = norm(sub(targetVelocity, attacker.velocity))
       const targetForce = add(pursueForce, mult(prey.force, flee))
@@ -135,7 +135,7 @@ function grow () {
     player.buildTimer += dt / 5
   })
   attackers.forEach(attacker => {
-    attacker.freezeTimer += dt / 2
+    attacker.freezeTimer += dt / 1.5
   })
 }
 
@@ -152,19 +152,19 @@ function movePlayers () {
 
 function moveAttackers () {
   state.attackers.forEach(attacker => {
-    if (attacker.freezeTimer > 1) {
-      moveActor(attacker)
-    }
+    moveActor(attacker)
   })
 }
 
 function moveActor (actor) {
-  actor.velocity.x -= actor.velocity.x * drag * dt
-  actor.velocity.y -= actor.velocity.y * drag * dt
-  actor.velocity.x += actor.force.x * actorMovePower * dt
-  actor.velocity.y += actor.force.y * actorMovePower * dt
   actor.position.x += actor.velocity.x * dt
   actor.position.y += actor.velocity.y * dt
+  actor.velocity.x -= actor.velocity.x * drag * dt
+  actor.velocity.y -= actor.velocity.y * drag * dt
+  if (actor.role === 'player' || actor.freezeTimer > 1) {
+    actor.velocity.x += actor.force.x * actorMovePower * dt
+    actor.velocity.y += actor.force.y * actorMovePower * dt
+  }
 }
 
 function setupWalls () {
@@ -282,7 +282,7 @@ io.on('connection', socket => {
   const attacker = {
     id: socket.id,
     team: 3,
-    position: { x: 0, y: 1 },
+    position: { x: 0, y: 5 },
     velocity: { x: 0, y: 0 },
     force: { x: 0, y: 0 },
     prey: null,

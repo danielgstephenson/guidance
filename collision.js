@@ -52,13 +52,11 @@ export function collideActorNode (actor, node) {
 }
 
 function onCollidePlayerAttacker (player, attacker, state) {
-  attacker.freezeTimer = 0
-  player.buildTimer = 0
-  /*
-  state.nodes.forEach(node => {
-    if (node.team === player.team) node.team = 0
-  })
-  */
+  if (attacker.freezeTimer > 1) {
+    attacker.freezeTimer = 0
+    // attacker.velocity = { x: 0, y: 0 }
+    player.buildTimer = 0
+  }
 }
 
 export function getEdges (state) {
@@ -137,8 +135,8 @@ export function collide (state) {
         active.attackers.forEach(attacker => pairs.actorActor.push([actor, attacker]))
         active.walls.forEach(wall => pairs.actorWall.push([actor, wall]))
         active.nodes.forEach(node => pairs.playerNode.push([actor, node]))
-        if (edge.object.role === 'player') active.players.set(actor.id, actor)
-        if (edge.object.role === 'attacker') active.attackers.set(actor.id, actor)
+        if (actor.role === 'player') active.players.set(actor.id, actor)
+        if (actor.role === 'attacker') active.attackers.set(actor.id, actor)
       } else if (edge.object.role === 'wall') {
         const wall = edge.object
         active.players.forEach(player => pairs.actorWall.push([player, wall]))
