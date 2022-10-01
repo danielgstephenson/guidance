@@ -47,7 +47,7 @@ server.listen(config.port, () => {
 function range (n) { return [...Array(n).keys()] }
 
 const dt = 0.01
-const actorMovePower = 60
+const actorMovePower = 40
 const drag = 0.5
 const actorSize = 1
 const nodeSize = 4
@@ -100,10 +100,12 @@ function pursue () {
   state.attackers.forEach(attacker => {
     const min = { distance: Infinity }
     players.forEach(player => {
-      const distance = getDist(attacker.position, player.position)
-      if (distance < min.distance) {
-        attacker.prey = player
-        min.distance = distance
+      if (player.active) {
+        const distance = getDist(attacker.position, player.position)
+        if (distance < min.distance) {
+          attacker.prey = player
+          min.distance = distance
+        }
       }
     })
     const prey = attacker.prey
