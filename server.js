@@ -47,7 +47,7 @@ server.listen(config.port, () => {
 function range (n) { return [...Array(n).keys()] }
 
 const dt = 0.01
-const actorMovePower = 40
+const actorMovePower = 20
 const drag = 0.7
 const actorSize = 1
 const nodeSize = 4
