@@ -132,10 +132,10 @@ function pursue () {
 
 function grow () {
   players.forEach(player => {
-    player.buildTimer += dt / 5
+    if (player.active) player.buildTimer += dt / 5
   })
   attackers.forEach(attacker => {
-    attacker.freezeTimer += dt / 1.5
+    if (attacker.active) attacker.freezeTimer += dt / 1.5
   })
 }
 
@@ -152,7 +152,7 @@ function movePlayers () {
 
 function moveAttackers () {
   state.attackers.forEach(attacker => {
-    moveActor(attacker)
+    if (attacker.active) moveActor(attacker)
   })
 }
 
@@ -269,6 +269,7 @@ io.on('connection', socket => {
   const smallTeam = teamCount1 > teamCount2 ? 2 : 1
   const player = {
     id: socket.id,
+    active: true,
     team: smallTeam,
     buildTimer: 0,
     position: { x: 0, y: 0 },
@@ -281,6 +282,7 @@ io.on('connection', socket => {
   sockets.set(socket.id, socket)
   const attacker = {
     id: socket.id,
+    active: true,
     team: 3,
     position: { x: 0, y: 5 },
     velocity: { x: 0, y: 0 },
@@ -293,6 +295,8 @@ io.on('connection', socket => {
   attackers.set(socket.id, attacker)
   socket.on('updateServer', message => {
     player.controls = message.controls
+    player.active = player.controls.active
+    attacker.active = player.controls.active
   })
   socket.on('disconnect', () => {
     console.log('disconnect:', socket.id)

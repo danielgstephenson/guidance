@@ -26,6 +26,7 @@ export function collideActorWall (actor, wall) {
 
 export function collideActorActor (a, b) {
   if (a.id === b.id && a.role === b.role) return false
+  if (!a.active || !b.active) return false
   const dist = getDist(a.position, b.position)
   const overlap = a.radius + b.radius - dist
   if (overlap < 0) return false
@@ -44,6 +45,7 @@ export function collideActorActor (a, b) {
 }
 
 export function collideActorNode (actor, node) {
+  if (!actor.active) return false
   const dist = getDist(actor.position, node.position)
   const overlap = actor.radius + node.radius - dist
   if (overlap < 0) return false
