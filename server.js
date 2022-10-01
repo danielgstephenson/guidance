@@ -48,7 +48,7 @@ function range (n) { return [...Array(n).keys()] }
 
 const dt = 0.01
 const actorMovePower = 40
-const drag = 0.5
+const drag = 0.7
 const actorSize = 1
 const nodeSize = 4
 const nodeSpread = 5
